@@ -51,6 +51,68 @@ Treat agent slots as a continuously replenished pool, not phase-locked batches:
 - The instant a slot frees up, refill it — don't wait for a whole wave to land.
 - Never block later, already-safe work behind an earlier wave that's still running.
 
+## Filesystem isolation — mandatory before any parallel dispatch
+
+Step 1 of the Algorithm ("decompose into a TODO graph") is incomplete without this: a
+dependency edge is not just "task B needs task A's output," it is also "task B and task A
+touch the same file." **Before dispatching anything in parallel, classify every pair of
+ready tasks by file-scope overlap:**
+
+1. **List the files/interfaces each task is expected to touch** as part of writing its
+   scope (Algorithm step 2 already requires this — reuse it for this check, don't skip it
+   because it feels redundant).
+2. **Disjoint scopes → dispatch normally**, same shared working directory, no isolation
+   needed. This is the common case and most of this skill's cost model depends on it
+   staying cheap — don't over-isolate.
+3. **Overlapping scopes (especially anything touching shared/global files — a design
+   system's shared component library, a shared config, a shared schema/types file) →
+   you MUST do one of:**
+   - **Serialize** the overlapping tasks (run them one after another, not concurrently) if
+     the overlap is small and the tasks are cheap, or
+   - **Isolate** each overlapping task in its own git worktree (pass `isolation: "worktree"`
+     to the `Agent` tool call) and merge the results back yourself once each returns —
+     this is the default choice once more than ~2 tasks share risky overlap, or the shared
+     file is large/central enough that a silent last-writer-wins clobber would be expensive
+     to detect.
+   - Never dispatch overlapping-scope tasks concurrently onto the same shared working
+     directory and rely on each worker "being careful" or on a later diff review to catch
+     collisions. Two agents editing, `git add`-ing, and committing in the same working tree
+     at the same time can interleave in ways a post-hoc diff review will not reliably catch
+     — this is not a theoretical risk, it is the normal failure mode of shared-checkout
+     concurrency.
+4. **A task that runs its own internal claude_swarm** (i.e. a sub-agent you dispatched is
+   itself decomposing further and spawning its own Haiku workers) inherits this same
+   obligation one level down — tell it explicitly, in its dispatch prompt, to run this same
+   overlap classification before its own parallel fan-out, not just at your top level.
+5. When in doubt about whether two tasks overlap (e.g. both touch "the design system" in
+   some vague sense but you haven't confirmed the exact files), **default to isolating** —
+   the cost of an unnecessary worktree is small; the cost of a missed collision on a shared
+   checkout is a silently corrupted or half-clobbered file that may not surface until much
+   later.
+
+## Commit traceability — tag every commit with its task ID
+
+When multiple tasks land commits into the same shared checkout (the common case when you
+chose "serialize" over "isolate" in the previous section, or whenever several tasks finish
+close together), give every task's dispatch prompt this instruction: **append a trailer
+line at the very end of its commit message** (after the body, on its own line, still plain
+human-readable text) naming the task:
+
+```
+Track-Item: <task-id-or-number>
+```
+
+Use whatever ID scheme your TODO graph already uses (a number, a short slug — anything
+stable and unique within this run). This costs nothing and pays for itself the moment you
+need to reconcile: `git log --grep "Track-Item: 7"` instantly answers "which commit(s) came
+from task 7," without you having to remember timing, diff through unrelated commits, or ask
+a completed (and possibly gone) worker to remind you. It also lets a task that runs its own
+internal commit (e.g. after amending to fix a review finding) keep the same trailer, so the
+final `git log` reads as a task-indexed history of the whole run, not an anonymous stream of
+"fix" commits. Tell each dispatched task about this requirement explicitly — it will not
+happen by default, and a task that already committed before receiving the instruction should
+`git commit --amend` to add the trailer rather than leave it untagged.
+
 ## When to use the Agent tool's `model` param
 
 - Default: omit — inherit session model — is wrong here. This skill is explicitly about deliberate model-tiering, so set `model: "haiku"` on the default worker calls, and escalate explicitly (`sonnet`, low/medium effort, `opus`) per the ladder above.
