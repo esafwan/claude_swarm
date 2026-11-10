@@ -61,6 +61,20 @@ decompose-and-parallelize only pays off when the task actually decomposes. The s
 this explicitly: don't reach for Opus to produce the plan unless the architecture is
 genuinely ambiguous, and don't escalate a whole feature just because one node in it is hard.
 
+## Adaptive workflow
+
+Use the lightest workflow that fits the risk. Small, clear changes get focused inspection and targeted checks. Multi-file features get repository reconnaissance, a dependency graph, bounded workers, and evidence-based review. Architecture-heavy or high-impact work gets design and trade-off review before implementation. Runtime checks complement automated tests for user-visible or integration behavior when the environment supports it.
+
+## Benchmarking against alternatives
+
+The cost and speed arguments above are architectural expectations, not measured results. Use [`BENCHMARK.md`](BENCHMARK.md) to compare this workflow with alternatives such as pstack on the same representative tasks. Record workflow and model versions, token usage or cost, elapsed and human time, verification results, and review findings. Do not publish expected savings as measured results.
+
+## Practices incorporated
+
+The workflow combines cost-aware delegated execution with risk-based design and verification, adapting selected ideas from [pstack](https://github.com/backnotprop/pstack) and [Matt Pocock's engineering skills](https://github.com/mattpocock/skills). It uses outcome clarification for material ambiguities, vertical-slice task graphs, test-first behavior checks at public seams, reproduce-first bug fixing, separate spec and standards reviews, and runtime checks alongside automated tests. Cost and speed remain unmeasured until comparable runs are completed.
+
 ## Files
 
 - `SKILL.md` — the skill definition Claude Code loads.
+- `CMAX.md` — the `cmax` alias, kept in sync with `SKILL.md`.
+- `BENCHMARK.md` — a repeatable comparison protocol.
