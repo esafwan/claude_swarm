@@ -71,7 +71,7 @@ The cost and speed arguments above are architectural expectations, not measured 
 
 ## Practices incorporated
 
-The workflow combines cost-aware delegated execution with risk-based design and verification, adapting selected ideas from [pstack](https://github.com/backnotprop/pstack) and [Matt Pocock's engineering skills](https://github.com/mattpocock/skills). It uses outcome clarification for material ambiguities, vertical-slice task graphs, test-first behavior checks at public seams, reproduce-first bug fixing, separate spec and standards reviews, and runtime checks alongside automated tests. Cost and speed remain unmeasured until comparable runs are completed.
+The workflow combines cost-aware delegated execution with risk-based design and verification, adapting selected ideas from pstack and Matt Pocock's engineering skills. It uses outcome clarification for material ambiguities, vertical-slice task graphs, test-first behavior checks at public seams, reproduce-first bug fixing, separate spec and standards reviews, and runtime checks alongside automated tests. Cost and speed remain unmeasured until comparable runs are completed.
 
 ## Files
 

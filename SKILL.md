@@ -19,7 +19,7 @@ You (the calling model, typically Sonnet 5) own the execution graph, the depende
 
 Before decomposing, classify the task by ambiguity, impact, and verification risk. Do not run the full multi-agent workflow mechanically for every request.
 
-- **Small and low-risk** (a localized change with clear requirements and an obvious check): inspect the relevant code, make the change, run the narrow relevant checks, and summarize evidence. Skip architecture agents, parallel workers, and Opus review.
+- **Small and low-risk** (a localized change with clear requirements and an obvious check): dispatch a single Haiku worker with a narrow scope, run the relevant checks, and summarize evidence. Skip architecture agents and parallel fan-out; the Opus final review may be a brief diff-only pass but is not skipped.
 - **Normal feature work** (multiple files or components, clear boundaries): understand the existing code and conventions, map dependencies and acceptance criteria, then use the normal worker and review workflow below.
 - **High-ambiguity or high-impact work** (new subsystem, public contract, data migration, security boundary, major architectural choice): first investigate constraints and existing patterns; produce a concise design with interfaces, trade-offs, risks, and open questions. Use an independent architecture challenge or competing proposals only where a real decision remains. Resolve material design questions before parallel implementation.
 
@@ -86,7 +86,7 @@ Automated tests are the repeatable proof of specified behavior. Run relevant tes
 
 Runtime checks complement tests. For user-visible or integration behavior, run the application or a representative end-to-end path when the environment permits. Runtime checks can reveal integration or configuration problems that unit tests miss, but they do not replace focused automated tests. Capture observable evidence when useful (for example, a screenshot, request/response, or log excerpt) and tie it to the acceptance criterion. If runtime verification is unavailable, state what was verified and what remains unverified.
 
-Use an independent reviewer for meaningful or risky changes when a separate model or agent is available. Prefer a different model or context from implementation. Reviewers should inspect the diff and evidence against the plan and report actionable findings with locations. Reconcile disagreements against code, tests, or runtime evidence, fix confirmed findings, and rerun affected checks. If an independent reviewer is unavailable or disproportionate for low-risk work, the steering model reviews directly.
+Use an independent reviewer for meaningful or risky changes when a separate model or agent is available. Prefer a different model or context from implementation. Reviewers should inspect the diff and evidence against the plan and report actionable findings with locations. Reconcile disagreements against code, tests, or runtime evidence, fix confirmed findings, and rerun affected checks. The Opus final adversarial review (Algorithm steps 8-9) still applies; this paragraph governs per-node review only.
 
 ## Persistent supervision and learning
 
